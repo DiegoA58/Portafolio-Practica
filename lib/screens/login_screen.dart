@@ -3,8 +3,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
-import '../database/database_helper.dart';
-import '../models/models.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,7 +16,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final _passwordController = TextEditingController();
   final _authService = AuthService();
   final _apiService = ApiService();
-  final DatabaseHelper _dbHelper = DatabaseHelper();
   
   bool _isLoading = false;
   bool _isSyncing = false;
@@ -170,12 +167,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           ),
                         ],
                       ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/gp_logo_icon.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => const Icon(Icons.water_drop, size: 60, color: Colors.blue),
-                        ),
+                      child: const Center(
+                        child: Icon(Icons.water_drop, size: 60, color: Colors.blue),
                       ),
                     ),
                   ),
@@ -265,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   
                   const SizedBox(height: 40),
                   Text(
-                    'v$_appVersion - GP Consultores',
+                    'v$_appVersion',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: isDarkMode ? Colors.white54 : Colors.black54,
                     ),

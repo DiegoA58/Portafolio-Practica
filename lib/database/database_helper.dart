@@ -11,6 +11,14 @@ class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
+  static const Map<String, dynamic> _portfolioUser = {
+    'id_usuario': -1,
+    'nombre': 'Portafolio',
+    'apellido': 'Local',
+    'email': 'portafolio@local.app',
+    'password': 'portafolio123',
+  };
+
   factory DatabaseHelper() => _instance;
 
   DatabaseHelper._internal();
@@ -108,7 +116,35 @@ class DatabaseHelper {
       onUpgrade: _onUpgrade,
     );
     await _ensureApiTablesExist(db);
+    await _ensurePortfolioUser(db);
     return db;
+  }
+
+  Future<void> _ensurePortfolioUser(Database db) async {
+    try {
+      final usersTable = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='usuarios'",
+      );
+      if (usersTable.isEmpty) return;
+
+      final columns = await db.rawQuery("PRAGMA table_info(usuarios)");
+      final columnNames = columns.map((column) => column['name']).toSet();
+      if (!columnNames.contains('email')) {
+        await db.execute("ALTER TABLE usuarios ADD COLUMN email TEXT;");
+      }
+      if (!columnNames.contains('password')) {
+        await db.execute("ALTER TABLE usuarios ADD COLUMN password TEXT;");
+      }
+
+      await db.insert(
+        'usuarios',
+        _portfolioUser,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await _log('✅ [AUTH] Usuario local de portafolio asegurado.');
+    } catch (e) {
+      await _log('⚠️ [AUTH] Error asegurando usuario local de portafolio: $e');
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -297,38 +333,38 @@ class DatabaseHelper {
 
         // 1. Eliminar servidores obsoletos
         await db.delete('url_acces', where: "url = ?", whereArgs: ['http://10.0.0.75/api_collector/public/api/']);
-        await db.delete('url_acces', where: "url = ?", whereArgs: ['https://gpconsultores.cl/apicollector/sync.php?endpoint=']);
+        await db.delete('url_acces', where: "url = ?", whereArgs: ['https://example.com/api/']);
         await _log('✅ [UPGRADE v17] Servidores obsoletos eliminados.');
 
-        // 2. Asegurarse de que el servidor apicollector.gpconsultores.cl esté presente e inactivo
-        final existing = await db.query('url_acces', where: "url = ?", whereArgs: ['https://apicollector.gpconsultores.cl/api/']);
+        // 2. Asegurarse de que el servidor por defecto esté presente e inactivo (placeholder)
+        final existing = await db.query('url_acces', where: "url = ?", whereArgs: ['https://example.com/api/']);
         if (existing.isEmpty) {
           await db.insert('url_acces', {
-            'url': 'https://apicollector.gpconsultores.cl/api/',
+            'url': 'https://example.com/api/',
             'usuario': 'collector',
-            'contrasenia': 'gp2026',
+            'contrasenia': 'changeme',
             'is_active': 0,
           });
-          await _log('✅ [UPGRADE v17] Servidor apicollector.gpconsultores.cl insertado.');
+          await _log('✅ [UPGRADE v17] Servidor example.com insertado (placeholder).');
         } else {
-          await db.update('url_acces', {'is_active': 0}, where: "url = ?", whereArgs: ['https://apicollector.gpconsultores.cl/api/']);
+          await db.update('url_acces', {'is_active': 0}, where: "url = ?", whereArgs: ['https://example.com/api/']);
         }
 
         // 3. Insertar nuevo servidor AWS dev si no existe y marcarlo como activo
-        final awsExisting = await db.query('url_acces', where: "url = ?", whereArgs: ['http://3.234.4.126:5348/api/']);
+        final awsExisting = await db.query('url_acces', where: "url = ?", whereArgs: ['http://localhost:5348/api/']);
         if (awsExisting.isEmpty) {
           await db.insert('url_acces', {
-            'url': 'http://3.234.4.126:5348/api/',
+            'url': 'http://localhost:5348/api/',
             'usuario': 'collector',
-            'contrasenia': 'gp2026',
+            'contrasenia': 'changeme',
             'is_active': 0,
           });
-          await _log('✅ [UPGRADE v17] Nuevo servidor AWS dev insertado.');
+          await _log('✅ [UPGRADE v17] Nuevo servidor dev insertado (localhost placeholder).');
         }
 
         // 4. Desactivar todos y activar sólo el nuevo servidor AWS
         await db.update('url_acces', {'is_active': 0});
-        await db.update('url_acces', {'is_active': 1}, where: "url = ?", whereArgs: ['http://3.234.4.126:5348/api/']);
+        await db.update('url_acces', {'is_active': 1}, where: "url = ?", whereArgs: ['http://localhost:5348/api/']);
         await _log('✅ [UPGRADE v17] Servidor AWS dev establecido como activo (seleccionado).');
 
       } catch (e) {
@@ -513,16 +549,16 @@ class DatabaseHelper {
       ''');
       // Insertar servidor de producción (Inactivo)
       await db.insert('url_acces', {
-        'url': 'https://apicollector.gpconsultores.cl/api/',
+        'url': 'https://example.com/api/',
         'usuario': 'collector',
-        'contrasenia': 'gp2026',
+        'contrasenia': 'changeme',
         'is_active': 0
       });
-      // Insertar servidor AWS dev (Activo / Seleccionado por defecto)
+      // Insertar servidor de desarrollo (placeholder)
       await db.insert('url_acces', {
-        'url': 'http://3.234.4.126:5348/api/',
+        'url': 'http://localhost:5348/api/',
         'usuario': 'collector',
-        'contrasenia': 'gp2026',
+        'contrasenia': 'changeme',
         'is_active': 1
       });
     }
@@ -641,6 +677,7 @@ class DatabaseHelper {
 
     // 2. Standard Catalogs
     await db.execute('CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, nombre TEXT, apellido TEXT, email TEXT, password TEXT)');
+    await db.insert('usuarios', _portfolioUser, conflictAlgorithm: ConflictAlgorithm.replace);
     await db.execute('CREATE TABLE matrices (id_matriz INTEGER PRIMARY KEY, nombre_matriz TEXT)');
     await db.execute('CREATE TABLE metodos (id_metodo INTEGER PRIMARY KEY, metodo TEXT)');
     await db.execute('CREATE TABLE tipos_equipo (id_form INTEGER PRIMARY KEY, tipo TEXT)');
@@ -691,16 +728,16 @@ class DatabaseHelper {
 
     // Insertar par de APIs de fábrica
     await db.insert('url_acces', {
-      'url': 'https://apicollector.gpconsultores.cl/api/',
+      'url': 'https://example.com/api/',
       'usuario': 'collector',
-      'contrasenia': 'gp2026',
+      'contrasenia': 'changeme',
       'is_active': 0
     });
     await db.insert('url_acces', {
-      'url': 'http://3.234.4.126:5348/api/',
+      'url': 'http://localhost:5348/api/',
       'usuario': 'collector',
-      'contrasenia': 'gp2026',
-      'is_active': 1  // ✅ Servidor de desarrollo AWS — seleccionado por defecto
+      'contrasenia': 'changeme',
+      'is_active': 1  // ✅ Servidor de desarrollo (placeholder)
     });
 
     await db.execute('''
@@ -1650,6 +1687,7 @@ class DatabaseHelper {
       batch.insert('usuarios', u.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
     }
     await batch.commit(noResult: true);
+    await _ensurePortfolioUser(db);
   }
 
   Future<void> saveMetodosBatch(List<Metodo> items) async {
@@ -1887,6 +1925,7 @@ class DatabaseHelper {
         batch.insert('usuarios', map, conflictAlgorithm: ConflictAlgorithm.replace);
       }
       await batch.commit(noResult: true);
+      await _ensurePortfolioUser(db);
       await _log('✅ [SYNC-USUARIOS] Éxito. ${usuarios.length} usuarios sincronizados.');
     } catch (e, stacktrace) {
       await _log('❌ [SYNC-USUARIOS] ERROR: $e');

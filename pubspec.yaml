@@ -50,16 +50,22 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - assets/gp-blanco-centrado.png
-    - assets/gp_logo_icon.png
-    - assets/appgp_icon.png
-    
+    - assets/README_icons.txt
+    - assets/icon_placeholder.png
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/appgp_icon_master.png"
+  image_path: "assets/icon_placeholder.png"
   adaptive_icon_background: "#ffffff"
-  adaptive_icon_foreground: "assets/appgp_icon_master.png"
+  adaptive_icon_foreground: "assets/icon_placeholder.png"
+  web:
+    generate: true
+    image_path: "assets/icon_placeholder.png"
+    background_color: "#0B6FA4"
+    theme_color: "#25C06D"
+  macos:
+    generate: true
+    image_path: "assets/icon_placeholder.png"
 
 
 
@@ -67,4 +73,4 @@ flutter_launcher_icons:
 
 
 
-
+

@@ -1,0 +1,1 @@
+Icons removed during portfolio cleanup. Replace with your own neutral icons and update pubspec.yaml and platform resources accordingly.

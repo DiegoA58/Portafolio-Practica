@@ -2716,7 +2716,7 @@ class _RegistrarMonitoreoScreenState extends State<RegistrarMonitoreoScreen> {
       final double imgWidth = frameInfo.image.width.toDouble();
       final double imgHeight = frameInfo.image.height.toDouble();
 
-      final ByteData data = await rootBundle.load('assets/gp-blanco-centrado.png');
+      final ByteData data = await rootBundle.load('assets/icon_placeholder.png');
       final Uint8List logoBytes = data.buffer.asUint8List();
 
       final double dynamicFontSize = imgWidth * 0.02;
